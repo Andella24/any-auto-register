@@ -2782,12 +2782,12 @@ class MoeMailMailbox(BaseMailbox):
 
 
 class LuckMailMailbox(BaseMailbox):
-    """LuckMail 混合模式：购买邮箱项目（openai）走购买路径，其他项目走订单接码"""
+    """LuckMail 混合模式：ChatGPT / Kiro 走购买邮箱，其他平台走订单接码"""
 
     # 走「购买邮箱 (email/purchase)」路径的项目编码集合。
     # 其余项目编码默认走「创建订单 + 订单接码」路径。
-    # ChatGPT 与 Kiro 在 api/tasks.py 里都被映射为 project_code="openai"。
-    PURCHASE_MODE_PROJECT_CODES = frozenset({"openai"})
+    # ChatGPT 在 api/tasks.py 里被映射为 openai，Kiro 保持原生 project_code=kiro。
+    PURCHASE_MODE_PROJECT_CODES = frozenset({"openai", "kiro"})
 
     def __init__(
         self,
