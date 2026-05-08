@@ -286,10 +286,12 @@ def _prepare_register_request(req: RegisterTaskRequest) -> RegisterTaskRequest:
         if platform in ("tavily", "openblocklabs"):
             raise HTTPException(400, f"LuckMail 渠道暂时不支持 {platform} 项目注册")
 
+        # Kiro 与 ChatGPT 同样走「购买邮箱 (email/purchase)」路径，LuckMail 后台只有
+        # openai 这一个购买邮箱项目，所以 kiro 平台直接复用 openai 作为 project_code。
         mapping = {
             "cursor": "cursor",
             "grok": "grok",
-            "kiro": "kiro",
+            "kiro": "openai",
             "chatgpt": "openai",
         }
         prepared.extra["luckmail_project_code"] = mapping.get(platform, platform)
