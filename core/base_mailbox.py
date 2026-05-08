@@ -2782,7 +2782,11 @@ class MoeMailMailbox(BaseMailbox):
 
 
 class LuckMailMailbox(BaseMailbox):
-    """LuckMail 混合模式：ChatGPT 走购买邮箱，其他平台走订单接码"""
+    """LuckMail 混合模式：ChatGPT / Kiro 走购买邮箱，其他平台走订单接码"""
+
+    # 走「购买邮箱 (email/purchase)」路径的项目编码集合。
+    # 其余项目编码默认走「创建订单 + 订单接码」路径。
+    PURCHASE_MODE_PROJECT_CODES = frozenset({"openai", "kiro"})
 
     def __init__(
         self,
@@ -2820,7 +2824,7 @@ class LuckMailMailbox(BaseMailbox):
             return True
         if self._token:
             return True
-        return self._project_code == "openai"
+        return self._project_code in self.PURCHASE_MODE_PROJECT_CODES
 
     def _resolve_token(self, account: MailboxAccount = None) -> str:
         token = (account.account_id if account else "") or self._token
@@ -2896,7 +2900,7 @@ class LuckMailMailbox(BaseMailbox):
 
         if self._use_purchase_mode():
             self._log(
-                f"[LuckMail] 分支: ChatGPT + LuckMail -> 购买邮箱接口 "
+                f"[LuckMail] 分支: 购买邮箱接口 "
                 f"(project_code={self._project_code}, email_type={self._email_type or '-'}, domain={self._domain or '-'})"
             )
             try:

@@ -518,7 +518,7 @@ def _run_register(task_id: str, req: RegisterTaskRequest):
                     mail_provider = merged_extra.get("mail_provider", "")
                     if mail_provider:
                         account.extra.setdefault("mail_provider", mail_provider)
-                    if mail_provider == "luckmail" and req.platform == "chatgpt":
+                    if mail_provider == "luckmail" and req.platform in ("chatgpt", "kiro"):
                         mailbox_token = getattr(_mailbox, "_token", "") or ""
                         if mailbox_token:
                             account.extra.setdefault("mailbox_token", mailbox_token)
