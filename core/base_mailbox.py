@@ -2871,7 +2871,9 @@ class LuckMailMailbox(BaseMailbox):
         exclude_codes: set = None,
     ) -> Optional[str]:
         try:
-            mail_list = self._client.user.get_token_mails(token)
+            mail_list = self._coerce_token_mail_list(
+                self._client.user.get_token_mails(token)
+            )
         except Exception:
             return None
 
@@ -2957,6 +2959,27 @@ class LuckMailMailbox(BaseMailbox):
         self._log(f"[LuckMail] 超时时间: {order.expired_at}")
         return MailboxAccount(email=email, account_id=order.order_no)
 
+    @staticmethod
+    def _coerce_token_mail_list(result):
+        """把 ``get_token_mails`` 返回值规范化成同步的 ``TokenMailList``。
+
+        LuckMail SDK 的 ``get_token_mails`` 会按上下文返回同步对象或异步 coroutine。
+        如果此处拿到 coroutine，说明 ``_is_async_context`` 误判了，当场抛明确错误，
+        避免让 ``coroutine.mails`` 这种晦涩的 AttributeError 穿透到业务层。
+        """
+        import inspect
+
+        if inspect.iscoroutine(result):
+            try:
+                result.close()
+            except Exception:
+                pass
+            raise RuntimeError(
+                "LuckMail SDK 返回了 coroutine（异步上下文被误识别）。"
+                "请检查当前线程是否意外存在运行中的 asyncio 事件循环。"
+            )
+        return result
+
     def get_current_ids(self, account: MailboxAccount) -> set:
         if not self._use_purchase_mode(account):
             return set()
@@ -2964,7 +2987,9 @@ class LuckMailMailbox(BaseMailbox):
         if not token:
             return set()
         try:
-            mail_list = self._client.user.get_token_mails(token)
+            mail_list = self._coerce_token_mail_list(
+                self._client.user.get_token_mails(token)
+            )
             return {str(m.message_id) for m in (mail_list.mails or []) if m.message_id}
         except Exception:
             return set()
@@ -3042,7 +3067,9 @@ class LuckMailMailbox(BaseMailbox):
             nonlocal saw_new_mail
             found_new_mail = False
             try:
-                mail_list = self._client.user.get_token_mails(token)
+                mail_list = self._coerce_token_mail_list(
+                    self._client.user.get_token_mails(token)
+                )
             except Exception as e:
                 raise TimeoutError(f"LuckMail 等待验证码失败: {e}") from e
 

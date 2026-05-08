@@ -22,10 +22,19 @@ from ..proxy_utils import normalize_proxy_url, build_requests_proxy_config
 
 
 def _is_async_context() -> bool:
-    """检测当前是否处于异步上下文（事件循环正在运行）"""
+    """检测当前是否处于异步上下文（当前线程正在运行事件循环）。
+
+    必须使用 ``asyncio.get_running_loop()`` 而不是 ``asyncio.get_event_loop()``：
+    - ``get_running_loop()`` 只返回 *当前线程正在运行* 的事件循环，否则抛 RuntimeError，
+      语义准确，不会受其他模块的副作用污染。
+    - ``get_event_loop()`` 在没有 running loop 时会返回全局 policy 里的 loop（可能是
+      其他库通过 ``asyncio.set_event_loop`` 设置过的，如 Playwright sync API 创建的 loop）。
+      这种 loop 的 ``is_running()`` 行为并不可靠，会导致同步调用路径被误判为异步，
+      表现为 ``get_token_mails`` 等方法返回未 await 的 coroutine。
+    """
     try:
-        loop = asyncio.get_event_loop()
-        return loop.is_running()
+        asyncio.get_running_loop()
+        return True
     except RuntimeError:
         return False
 
